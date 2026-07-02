@@ -113,13 +113,14 @@
 /* Accent Button */
 .btn-accent {
   @apply px-6 py-3 rounded-full font-medium transition-all duration-200;
-  background: #4F6DFF;
+  /* #3D5CF5 keeps white text at >= 4.5:1 (WCAG AA) */
+  background: #3D5CF5;
   color: white;
 }
 
 .btn-accent:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(79, 109, 255, 0.35);
+  box-shadow: 0 8px 24px rgba(61, 92, 245, 0.35);
 }
 
 /* Live Indicator */

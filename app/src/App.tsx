@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,11 +24,7 @@ const socials = [
 
 function ProjectCard({ project, onOpen }: { project: Project; onOpen: (p: Project) => void }) {
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(project)}
-      className="glass-card-sm p-6 text-left transition-transform duration-200 hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-    >
+    <article className="glass-card-sm relative p-6 transition-transform duration-200 hover:-translate-y-1 focus-within:ring-2 focus-within:ring-ring">
       <div className="flex flex-wrap gap-2 mb-4">
         {project.tags.map(tag => (
           <Badge key={tag} variant="secondary" className="font-mono text-xs">
@@ -36,53 +32,70 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: (p: Projec
           </Badge>
         ))}
       </div>
-      <h3 className="font-heading text-2xl font-semibold mb-2">{project.title}</h3>
+      <h3 className="font-heading text-2xl font-semibold mb-2">
+        {/* Stretched over the card so the whole article is clickable */}
+        <button
+          type="button"
+          onClick={() => onOpen(project)}
+          className="text-left after:absolute after:inset-0 focus-visible:outline-none"
+        >
+          {project.title}
+        </button>
+      </h3>
       <p className="text-muted-foreground">{project.blurb}</p>
-    </button>
+    </article>
   );
 }
 
 function CaseStudyDialog({ project, onClose }: { project: Project | null; onClose: () => void }) {
+  // Keep the last project rendered so the content doesn't blank out
+  // while the dialog's close animation plays.
+  const lastProject = useRef(project);
+  if (project) lastProject.current = project;
+  const shown = project ?? lastProject.current;
+
   return (
     <Dialog open={project !== null} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        {project && (
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+        {shown && (
           <>
             <DialogHeader>
-              <DialogTitle className="font-heading text-3xl">{project.title}</DialogTitle>
-              <DialogDescription>{project.blurb}</DialogDescription>
+              <DialogTitle className="font-heading text-3xl">{shown.title}</DialogTitle>
+              <DialogDescription>{shown.blurb}</DialogDescription>
             </DialogHeader>
-            <dl className="grid grid-cols-2 gap-4 font-mono text-sm border-y border-border py-4 my-2">
-              <div>
-                <dt className="text-muted-foreground">Client</dt>
-                <dd>{project.meta.client}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Role</dt>
-                <dd>{project.meta.role}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Year</dt>
-                <dd>{project.meta.year}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Deliverables</dt>
-                <dd>{project.meta.deliverables}</dd>
-              </div>
-            </dl>
-            {(
-              [
-                ['Overview', project.body.overview],
-                ['Problem', project.body.problem],
-                ['Solution', project.body.solution],
-                ['Process', project.body.process],
-              ] as const
-            ).map(([heading, text]) => (
-              <section key={heading}>
-                <h4 className="font-heading font-semibold text-lg mb-1">{heading}</h4>
-                <p className="text-muted-foreground">{text}</p>
-              </section>
-            ))}
+            <div className="overflow-y-auto space-y-4">
+              <dl className="grid grid-cols-2 gap-4 font-mono text-sm border-y border-border py-4">
+                <div>
+                  <dt className="text-muted-foreground">Client</dt>
+                  <dd>{shown.meta.client}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Role</dt>
+                  <dd>{shown.meta.role}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Year</dt>
+                  <dd>{shown.meta.year}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Deliverables</dt>
+                  <dd>{shown.meta.deliverables}</dd>
+                </div>
+              </dl>
+              {(
+                [
+                  ['Overview', shown.body.overview],
+                  ['Problem', shown.body.problem],
+                  ['Solution', shown.body.solution],
+                  ['Process', shown.body.process],
+                ] as const
+              ).map(([heading, text]) => (
+                <section key={heading}>
+                  <h4 className="font-heading font-semibold text-lg mb-1">{heading}</h4>
+                  <p className="text-muted-foreground">{text}</p>
+                </section>
+              ))}
+            </div>
           </>
         )}
       </DialogContent>
@@ -96,7 +109,7 @@ function App() {
   const shown = showAll ? projects : projects.filter(p => p.featured);
 
   return (
-    <div className="relative">
+    <div id="top" className="relative">
       <div className="grid-overlay" />
       <div className="grain-overlay" />
 
@@ -113,7 +126,7 @@ function App() {
         </nav>
       </header>
 
-      <main id="top" className="relative z-10 max-w-5xl mx-auto px-6">
+      <main className="relative z-10 max-w-5xl mx-auto px-6">
         {/* Hero */}
         <section className="py-24 md:py-36">
           <p className="font-mono text-primary mb-4">{profile.role}</p>
@@ -196,7 +209,8 @@ function App() {
       <footer className="relative z-10 border-t border-border">
         <div className="max-w-5xl mx-auto px-6 py-10 flex flex-wrap items-center justify-between gap-6">
           <nav className="flex flex-wrap gap-6 text-sm text-muted-foreground">
-            {[...nav, ...socials].map(item => (
+            {/* '#' hrefs are unfilled placeholders — hide them until set in content.ts */}
+            {[...nav, ...socials].filter(item => item.href !== '#').map(item => (
               <a
                 key={item.label}
                 href={item.href}
